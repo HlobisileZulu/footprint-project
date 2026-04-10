@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Footprint Logger</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- Loading screen shown while we check if the user is already logged in -->
+  <div id="loading">Loading...</div>
+
+  <!-- AUTH SCREEN: shown when no user is logged in -->
+  <div id="auth-screen" style="display:none;">
+    <div class="auth-card">
+      <h2>🌱 Footprint Logger</h2>
+      <p>Track and reduce your carbon footprint</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form" class="auth-form">
+        <input type="email" id="login-email" placeholder="Email address" />
+        <input type="password" id="login-password" placeholder="Password" />
+        <p class="error-msg" id="login-error"></p>
+        <button class="btn btn-green" onclick="handleLogin()">Sign In</button>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="auth-form" style="display:none;">
+        <input type="text" id="reg-name" placeholder="Your full name" />
+        <input type="email" id="reg-email" placeholder="Email address" />
+        <input type="password" id="reg-password" placeholder="Password (min 6 characters)" />
+        <p class="error-msg" id="reg-error"></p>
+        <button class="btn btn-green" onclick="handleRegister()">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP: shown after login -->
+  <div id="app" style="display:none;">
+    <div class="layout">
+
+      <!-- Sidebar Navigation -->
+      <nav class="sidebar">
+        <div class="sidebar-logo">
+          <h1>🌱 Footprint</h1>
+          <span>Carbon Tracker</span>
+        </div>
+
+        <button class="nav-btn active" id="nav-dashboard" onclick="showPage('dashboard')">
+          📊 Dashboard
+        </button>
+        <button class="nav-btn" id="nav-log" onclick="showPage('log')">
+          ➕ Log Activity
+        </button>
+        <button class="nav-btn" id="nav-insights" onclick="showPage('insights')">
+          💡 Insights
+        </button>
+
+        <div class="sidebar-bottom">
+          <p id="sidebar-username">Loading...</p>
+          <button class="btn btn-outline" onclick="handleLogout()">Sign Out</button>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="main">
+
+        <!-- DASHBOARD PAGE -->
+        <div class="page active" id="page-dashboard">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">Your carbon footprint overview</p>
+
+          <!-- Summary Stats -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Today</div>
+              <div class="stat-value" id="stat-today">0 <span class="stat-unit">kg</span></div>
+              <div class="stat-sub">CO2 today</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-label">This Week</div>
+              <div class="stat-value" id="stat-week">0 <span class="stat-unit">kg</span></div>
+              <div class="stat-sub">7-day total</div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-label">Highest Category</div>
+              <div class="stat-value" id="stat-top" style="font-size:18px;">—</div>
+              <div class="stat-sub" id="stat-top-val">No data yet</div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-label">Total Logs</div>
+              <div class="stat-value" id="stat-count">0</div>
+              <div class="stat-sub">activities logged</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-row">
+            <div class="card">
+              <h3>Emissions by Category</h3>
+              <div class="chart-container">
+                <canvas id="pie-chart"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Daily Emissions (Last 7 Days)</h3>
+              <div class="chart-container">
+                <canvas id="bar-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Streak and Community -->
+          <div class="charts-row">
+            <div class="card">
+              <h3>Logging Streak (This Week)</h3>
+              <div class="streak-row" id="streak-row"></div>
+            </div>
+            <div class="card">
+              <h3>You vs Community Average</h3>
+              <div class="community-compare" id="community-compare"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOG ACTIVITY PAGE -->
+        <div class="page" id="page-log">
+          <h1 class="page-title">Log Activity</h1>
+          <p class="page-subtitle">Add activities to track your emissions</p>
+
+          <div class="running-total-bar">
+            <span>Today's Running Total</span>
+            <span id="running-total">0.00 kg CO2</span>
+          </div>
+
+          <div class="log-layout">
+            <!-- Left: Pick an Activity -->
+            <div class="card">
+              <h3>Select an Activity</h3>
+
+              <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterActs('all', this)">All</button>
+                <button class="filter-tab" onclick="filterActs('transport', this)">🚗 Transport</button>
+                <button class="filter-tab" onclick="filterActs('food', this)">🍔 Food</button>
+                <button class="filter-tab" onclick="filterActs('energy', this)">⚡ Energy</button>
+                <button class="filter-tab" onclick="filterActs('goods', this)">🛍️ Goods</button>
+              </div>
+
+              <div class="activity-list" id="activity-list"></div>
+
+              <hr class="divider" />
+              <p style="font-size:13px; color:#666; margin-bottom:10px;">Or add a custom activity:</p>
+              <div class="custom-form">
+                <input type="text" id="custom-name" placeholder="Activity name" />
+                <input type="number" id="custom-co2" placeholder="CO2 in kg (e.g. 2.5)" step="0.01" min="0" />
+                <select id="custom-cat">
+                  <option value="transport">Transport</option>
+                  <option value="food">Food</option>
+                  <option value="energy">Energy</option>
+                  <option value="goods">Goods</option>
+                </select>
+                <button class="btn btn-green" onclick="addCustom()">+ Add Custom</button>
+              </div>
+            </div>
+
+            <!-- Right: Today's Log -->
+            <div class="card">
+              <h3>Today's Log</h3>
+              <div id="log-list">
+                <div class="empty-state">No activities logged yet. Click one on the left!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSIGHTS PAGE -->
+        <div class="page" id="page-insights">
+          <h1 class="page-title">Insights</h1>
+          <p class="page-subtitle">Personalised tips to reduce your footprint</p>
+
+          <div class="tips-grid" id="tips-grid"></div>
+
+          <div class="charts-row">
+            <div class="card">
+              <h3>Category Breakdown (This Week)</h3>
+              <div id="category-breakdown"></div>
+            </div>
+            <div class="card">
+              <h3>Weekly Goal Progress</h3>
+              <div id="goal-progress"></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Chart.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- Our main JavaScript file -->
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
